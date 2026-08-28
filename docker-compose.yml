@@ -3,7 +3,7 @@ services:
     build:
       context: .
     image: pvn-theisle-evrima:local
-    container_name: theisle-evrima
+    container_name: pvn-theisle-evrima
     restart: unless-stopped
     env_file:
       - .env

@@ -1,0 +1,8 @@
+.env
+data/
+!data/.gitkeep
+backups/
+!backups/.gitkeep
+runtime/
+!runtime/.gitkeep
+*.partial

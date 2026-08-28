@@ -1,0 +1,54 @@
+services:
+  theisle:
+    build:
+      context: .
+    image: pvn-theisle-evrima:local
+    container_name: theisle-evrima
+    restart: unless-stopped
+    env_file:
+      - .env
+    user: "${PUID:-1000}:${PGID:-1000}"
+    ports:
+      - "${GAME_PORT:-7777}:${GAME_PORT:-7777}/udp"
+      - "${GAME_PORT:-7777}:${GAME_PORT:-7777}/tcp"
+      - "${QUERY_PORT:-7778}:${QUERY_PORT:-7778}/udp"
+      - "${RconPort:-8888}:${RconPort:-8888}/tcp"
+      - "${QueuePort:-10000}:${QueuePort:-10000}/tcp"
+    volumes:
+      - ./data:/home/ubuntu/Steam/steamapps/common/The Isle Dedicated Server
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f '[T]heIsleServer' >/dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 5m
+
+  backup:
+    image: pvn-theisle-evrima:local
+    container_name: theisle-backup
+    restart: unless-stopped
+    depends_on:
+      theisle:
+        condition: service_started
+    env_file:
+      - .env
+    user: "${PUID:-1000}:${PGID:-1000}"
+    volumes:
+      - ./data:/home/ubuntu/Steam/steamapps/common/The Isle Dedicated Server:ro
+      - ./backups:/backup
+    command: ["/opt/theisle/scripts/backup.sh"]
+
+  ram-monitor:
+    image: pvn-theisle-evrima:local
+    container_name: theisle-ram-monitor
+    restart: unless-stopped
+    depends_on:
+      theisle:
+        condition: service_started
+    env_file:
+      - .env
+    user: "${PUID:-1000}:${PGID:-1000}"
+    volumes:
+      - /proc/meminfo:/host-proc/meminfo:ro
+      - ./runtime:/runtime
+    command: ["/opt/theisle/scripts/ram-monitor.sh"]

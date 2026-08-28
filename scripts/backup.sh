@@ -19,6 +19,10 @@ backup_once() {
   staging="$BACKUP_DIR/.${timestamp}.partial"
 
   mkdir -p "$BACKUP_DIR"
+  if [[ ! -w "$BACKUP_DIR" ]]; then
+    log "ERROR: backup directory is not writable: $BACKUP_DIR"
+    return 1
+  fi
   rm -rf "$staging"
   mkdir -p "$staging/PlayerData" "$staging/LinuxJson"
 

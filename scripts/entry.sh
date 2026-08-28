@@ -20,6 +20,15 @@ require_value() {
   fi
 }
 
+check_steam_network() {
+  local steam_api_url="${STEAM_NETWORK_CHECK_URL:-https://api.steampowered.com/}"
+  if ! curl --fail --silent --show-error --head --connect-timeout 15 --max-time 30 "$steam_api_url" >/dev/null; then
+    log "ERROR: Steam network preflight failed: cannot reach $steam_api_url"
+    log "Check outbound DNS/HTTPS (TCP 443) from the VPS and Docker, then retry."
+    return 1
+  fi
+}
+
 install_server() {
   if [[ ! -x "$STEAMCMD" ]]; then
     log "ERROR: steamcmd not found at $STEAMCMD"
@@ -28,6 +37,7 @@ install_server() {
 
   if [[ ! -x "$GAME_DIR/TheIsleServer.sh" || "${UPDATE_ON_START,,}" == "true" ]]; then
     log "Installing/updating The Isle Dedicated Server branch ${STEAM_BRANCH:-evrima}"
+    check_steam_network
     "$STEAMCMD" \
       +force_install_dir "$GAME_DIR" \
       +login anonymous \

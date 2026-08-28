@@ -1,29 +1,10 @@
 services:
-  bootstrap:
-    image: busybox:1.37
-    container_name: pvn-theisle-bootstrap
-    user: "0:0"
-    volumes:
-      - ./data:/data
-      - ./backups:/backups
-      - ./runtime:/runtime
-    command:
-      - /bin/sh
-      - -ec
-      - |
-        mkdir -p /data /backups /runtime
-        chown -R ${PUID:-1000}:${PGID:-1000} /data /backups /runtime
-        chmod 0775 /data /backups /runtime
-
   theisle:
     build:
       context: .
     image: pvn-theisle-evrima:local
     container_name: pvn-theisle-evrima
     restart: unless-stopped
-    depends_on:
-      bootstrap:
-        condition: service_completed_successfully
     env_file:
       - .env
     user: "${PUID:-1000}:${PGID:-1000}"
@@ -47,8 +28,6 @@ services:
     container_name: theisle-backup
     restart: unless-stopped
     depends_on:
-      bootstrap:
-        condition: service_completed_successfully
       theisle:
         condition: service_started
     env_file:
@@ -64,8 +43,6 @@ services:
     container_name: theisle-ram-monitor
     restart: unless-stopped
     depends_on:
-      bootstrap:
-        condition: service_completed_successfully
       theisle:
         condition: service_started
     env_file:

@@ -20,6 +20,9 @@ Do not commit `.env`; it contains credentials.
 Start and inspect the stack:
 
 ```bash
+mkdir -p data backups runtime
+sudo chown -R ubuntu:ubuntu data backups runtime
+chmod 775 data backups runtime
 docker compose up -d --build
 docker compose logs -f theisle backup
 ```
@@ -29,7 +32,7 @@ The first start downloads the Evrima branch through SteamCMD. `UPDATE_ON_START=t
 - `data/TheIsle/Binaries/Linux/libisleplugin.so`
 - `data/TheIsle/Binaries/Linux/TheIsleProxPlugin.so`
 
-It then updates the `apiKey` in `islepilot-config.json` and `server_hash` in `settings.json`. Plugin downloads use a temporary file and are atomically moved into place only after a successful download, so a CDN failure cannot corrupt an existing plugin. Set `PLUGIN_DOWNLOAD_TIMEOUT_SECONDS` to bound a slow CDN request. Credentials are read from `.env` and are never written to the image or this repository.
+It then updates the `apiKey` in `islepilot-config.json` and `server_hash` in `settings.json`. Plugins are downloaded on the first start whenever either library is missing, even with `UPDATE_MODS=false`; after both files exist, set `UPDATE_MODS=true` only when you deliberately want to refresh them. Downloads use a temporary file and are atomically moved into place only after a successful download, so a CDN failure cannot corrupt an existing plugin. Set `PLUGIN_DOWNLOAD_TIMEOUT_SECONDS` to bound a slow CDN request. Credentials are read from `.env` and are never written to the image or this repository.
 
 ## Configuration behavior
 

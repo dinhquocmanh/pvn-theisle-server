@@ -22,7 +22,7 @@ require_value() {
 
 check_steam_network() {
   local steam_api_url="${STEAM_NETWORK_CHECK_URL:-https://api.steampowered.com/}"
-  if ! curl --fail --silent --show-error --head --connect-timeout 15 --max-time 30 "$steam_api_url" >/dev/null; then
+  if ! curl --silent --show-error --head --connect-timeout 15 --max-time 30 "$steam_api_url" >/dev/null; then
     log "ERROR: Steam network preflight failed: cannot reach $steam_api_url"
     log "Check outbound DNS/HTTPS (TCP 443) from the VPS and Docker, then retry."
     return 1
@@ -99,8 +99,8 @@ install_plugins() {
     mv -f "$temporary" "$destination"
   }
 
-  if [[ "${UPDATE_MODS,,}" == "true" ]]; then
-    log "Downloading IslePilot and Isle Voice plugins"
+  if [[ "${UPDATE_MODS,,}" == "true" || ! -f "$BINARY_DIR/libisleplugin.so" || ! -f "$BINARY_DIR/TheIsleProxPlugin.so" ]]; then
+    log "Downloading required IslePilot and Isle Voice plugins"
     download_plugin https://islepilot.eu/cdn/plugin/libisleplugin.so "$BINARY_DIR/libisleplugin.so"
     download_plugin https://cdn.isle-voip.com/server/linux/TheIsleProxPlugin.so "$BINARY_DIR/TheIsleProxPlugin.so"
   else

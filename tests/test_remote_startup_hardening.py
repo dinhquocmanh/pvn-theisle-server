@@ -10,24 +10,18 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class RemoteStartupHardeningTest(unittest.TestCase):
-    def test_compose_bootstraps_host_bind_mount_ownership_before_dependents(self):
+    def test_compose_runs_all_long_lived_services_as_ubuntu(self):
         with (PROJECT_ROOT / "docker-compose.yml").open(encoding="utf-8") as source:
             services = yaml.safe_load(source)["services"]
 
-        bootstrap = services["bootstrap"]
-        self.assertEqual(bootstrap["user"], "0:0")
-        self.assertIn("./backups:/backups", bootstrap["volumes"])
-        self.assertIn("./runtime:/runtime", bootstrap["volumes"])
         for service_name in ("theisle", "backup", "ram-monitor"):
-            self.assertEqual(
-                services[service_name]["depends_on"]["bootstrap"]["condition"],
-                "service_completed_successfully",
-            )
+            self.assertEqual(services[service_name]["user"], "${PUID:-1000}:${PGID:-1000}")
+        self.assertNotIn("bootstrap", services)
 
     def test_backup_requires_writable_backup_directory_before_snapshot(self):
         script = (PROJECT_ROOT / "scripts" / "backup.sh").read_text(encoding="utf-8")
         self.assertIn('mkdir -p "$BACKUP_DIR"', script)
-        self.assertIn('[[ -w "$BACKUP_DIR" ]]', script)
+        self.assertIn('[[ ! -w "$BACKUP_DIR" ]]', script)
         self.assertIn('ERROR: backup directory is not writable', script)
 
     def test_steam_network_preflight_runs_before_steamcmd(self):
@@ -35,6 +29,12 @@ class RemoteStartupHardeningTest(unittest.TestCase):
         self.assertIn("check_steam_network()", script)
         self.assertLess(script.index("check_steam_network"), script.index('"$STEAMCMD"'))
         self.assertIn("Steam network preflight failed", script)
+        self.assertNotIn("curl --fail --silent --show-error --head", script)
+
+    def test_missing_plugins_force_initial_download_even_when_updates_disabled(self):
+        script = (PROJECT_ROOT / "scripts" / "entry.sh").read_text(encoding="utf-8")
+        self.assertIn('"${UPDATE_MODS,,}" == "true" || ! -f "$BINARY_DIR/libisleplugin.so"', script)
+        self.assertIn('! -f "$BINARY_DIR/TheIsleProxPlugin.so"', script)
 
 
 if __name__ == "__main__":

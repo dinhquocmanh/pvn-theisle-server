@@ -67,9 +67,21 @@ write_game_ini() {
     done
 
     printf '\n[/Script/TheIsle.TIGameStateBase]\n'
+    # printf '\n[/Script/TheIsle.TIGameStateBase]\n'
+    # for key in AdminsSteamIDs WhitelistIDs VIPs; do
+    #   printf '%s=%s\n' "$key" "${!key:-}"
+    # done
+
     for key in AdminsSteamIDs WhitelistIDs VIPs; do
-      printf '%s=%s\n' "$key" "${!key:-}"
+      value="${!key:-}"
+      value="${value//,/$'\n'}"
+
+      while read -r id; do
+        id="${id//[[:space:]]/}"
+        [[ -n "$id" ]] && printf '%s=%s\n' "$key" "$id"
+      done <<< "$value"
     done
+    
 
     local allowed_class
     IFS=',' read -ra allowed_classes <<< "${AllowedClasses:-}"

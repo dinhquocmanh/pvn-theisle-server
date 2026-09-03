@@ -6,3 +6,4 @@ backups/
 runtime/
 !runtime/.gitkeep
 *.partial
+*.log

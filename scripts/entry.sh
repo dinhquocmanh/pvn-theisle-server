@@ -5,6 +5,7 @@ GAME_DIR="${GAME_DIR:-/home/ubuntu/Steam/steamapps/common/The Isle Dedicated Ser
 BINARY_DIR="$GAME_DIR/TheIsle/Binaries/Linux"
 CONFIG_DIR="$GAME_DIR/TheIsle/Saved/Config/LinuxServer"
 GAME_INI="$CONFIG_DIR/Game.ini"
+ENGINE_INI="$CONFIG_DIR/Engine.ini"
 STEAMCMD="${STEAMCMD:-/home/steam/steamcmd/steamcmd.sh}"
 
 log() {
@@ -92,6 +93,51 @@ write_game_ini() {
   } > "$GAME_INI"
   chmod 0600 "$GAME_INI"
   log "Wrote environment settings to $GAME_INI"
+}
+
+write_engine_ini() {
+  mkdir -p "$CONFIG_DIR"
+
+  # Chỉ ghi dòng khi biến .env có giá trị.
+  # Biến không khai báo sẽ giữ Unreal Engine default.
+  emit() {
+    local env_key="$1"
+    local ini_key="$2"
+    local value="${!env_key:-}"
+
+    [[ -z "$value" ]] || printf '%s=%s\n' "$ini_key" "$value"
+    return 0
+  }
+
+  {
+    printf ';METADATA=(Diff=true, UseCommands=true)\n'
+    printf '; Generated from environment variables\n'
+
+    printf '\n[/Script/IrisCore.NetObjectGridFilterConfig]\n'
+    emit IRIS_DEFAULT_CULL_DISTANCE DefaultCullDistance
+    emit IRIS_CELL_SIZE_X CellSizeX
+    emit IRIS_CELL_SIZE_Y CellSizeY
+
+    printf '\n[/Script/IrisCore.SphereNetObjectPrioritizerConfig]\n'
+    emit IRIS_INNER_RADIUS InnerRadius
+    emit IRIS_OUTER_RADIUS OuterRadius
+    emit IRIS_INNER_PRIORITY InnerPriority
+    emit IRIS_OUTER_PRIORITY OuterPriority
+    emit IRIS_OUTSIDE_PRIORITY OutsidePriority
+
+    printf '\n[ConsoleVariables]\n'
+    emit NET_ENABLE_MOVE_COMBINING p.NetEnableMoveCombining
+    emit NET_PACKED_MOVEMENT_MAX_MOVES p.NetPackedMovementMaxMoves
+    emit NET_MAX_REP_ARRAY_SIZE net.MaxRepArraySize
+    emit NET_MAX_REP_ARRAY_MEMORY net.MaxRepArrayMemory
+    emit WORLD_PARTITION_SERVER_STREAMING wp.Runtime.EnableServerStreaming
+    emit WORLD_PARTITION_SERVER_STREAMING_OUT wp.Runtime.EnableServerStreamingOut
+    emit ASYNC_LOADING_THREAD_ENABLED s.AsyncLoadingThreadEnabled
+    emit ASYNC_LOADING_TIME_LIMIT s.AsyncLoadingTimeLimit
+  } > "$ENGINE_INI"
+
+  chmod 0600 "$ENGINE_INI"
+  log "Wrote Engine settings to $ENGINE_INI"
 }
 
 install_plugins() {
@@ -212,6 +258,7 @@ trap stop_server SIGINT SIGTERM
 mkdir -p "$GAME_DIR"
 install_server
 write_game_ini
+write_engine_ini
 install_plugins
 patch_server_launcher
 require_value EOS_DEDICATED_SERVER_CLIENT_ID
